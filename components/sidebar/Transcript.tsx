@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranscriptStore } from "@/store/useTranscriptStore";
-import { expandToParagraph } from "@/lib/transcriptUtils";
 import { WordChunk } from "./WordChunk";
 
 // Subscribes to activeWordIndex in isolation and scrolls the active word into
@@ -62,14 +61,15 @@ export default function Transcript() {
     if (a > b) [a, b] = [b, a];
 
     const words = t.words;
-    // Snap the selection out to whole paragraphs (full-stop delimited).
-    const { startIndex, endIndex } = expandToParagraph(words, a, b);
+    // Trim leading/trailing spacing tokens so the range maps to real words.
+    while (a < b && words[a].type === "spacing") a++;
+    while (b > a && words[b].type === "spacing") b--;
 
     useTranscriptStore.getState().addSkippedRange({
-      startIndex,
-      endIndex,
-      startTime: words[startIndex].start,
-      endTime: words[endIndex].end,
+      startIndex: a,
+      endIndex: b,
+      startTime: words[a].start,
+      endTime: words[b].end,
     });
     sel.removeAllRanges();
     setHasSelection(false);
